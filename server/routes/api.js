@@ -8,11 +8,16 @@ import { fileURLToPath } from "url";
 
 import multer from "multer";
 
+import iconv from "iconv-lite"
 
 import serverConfig from "../../js/client/serverConfig.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function fixCyrillic(corrupted) {
+  return iconv.decode(Buffer.from(corrupted, 'latin1'), 'utf8')
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -20,8 +25,10 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    cb(null, file.originalname)
-  }
+    const correctName = iconv.decode(Buffer.from(file.originalname, "latin1"), "utf8");
+
+    cb(null, correctName) // not support cyrillic
+  } // http://localhost:9999/media/people.png
 })
 
 const upload = multer({storage: storage})
@@ -97,7 +104,7 @@ router.post("/reg", async (req, res) => {
     } else {
       const hashedPassword = await bcrypt.hash(data.password, 12);
 
-      const token = nanoid(14)
+      const token = nanoid(21)
       const hashedToken = await bcrypt.hash(token, 12);
 
       res.cookie("token", token)
@@ -108,7 +115,7 @@ router.post("/reg", async (req, res) => {
         password: hashedPassword,
         token: hashedToken,
         avatar: `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`,
-        id: nanoid(10),
+        id: nanoid(20),
       };
 
       databaseParsed.users.push(newUser);
@@ -203,9 +210,11 @@ router.post("/change-account-data", upload.single("newAvatar"), async (req, res)
 
     const oldAvatar = user.avatar.slice(8) // getting file name
 
-
     const oldAvatarPath = path.join(__dirname, "..", "uploads", oldAvatar)
     const newAvatarPath = path.join(__dirname, "..", "uploads", `${req.body.newUsername}.jpg`)
+
+
+
 
     await fs.promises.rename(oldAvatarPath, newAvatarPath)
     user.avatar = `/static/${req.body.newUsername}.jpg`
@@ -213,10 +222,10 @@ router.post("/change-account-data", upload.single("newAvatar"), async (req, res)
 
   user.username = req.body.newUsername || "<blank>";
   user.password = req.body.newPassword || user.password;
-  user.bio = req.body.newBio;
+  user.bio = req.body.newBio;``
 
   if (req.file) {
-    user.avatar = `/static/${req.file.originalname}`
+    user.avatar = `/static/${fixCyrillic(req.file.originalname)}`
   }
 
   await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null , 2), 'utf-8')

@@ -2,11 +2,33 @@ import serverConfig from "./serverConfig.js";
 
 const socket = io(`http://${serverConfig.hostname}:${serverConfig.port}`);
 
+const account = JSON.parse(localStorage.getItem("account"));
+
 window.onload = async () => {
   if (!localStorage.getItem("account")) {
     window.location.href = "/auth";
   }
 };
+
+let isReallyUser = await fetch(
+  `http://${serverConfig.hostname}:${serverConfig.port}/api/auth-token`,
+  {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      username: account.username,
+      token: account.token,
+    }),
+  }
+);
+
+isReallyUser = await isReallyUser.json();
+
+if (!isReallyUser.success) {
+  window.location.href = "/auth";
+}
 
 let isConnected = false;
 
@@ -33,69 +55,39 @@ class DataSender {
 
     input.value = "";
 
-    const account = JSON.parse(localStorage.getItem("account"));
+    createMessage(
+      account.username,
+      `http://${serverConfig.hostname}:${serverConfig.port}/static/${encodeURI(account.username)}.jpg`,
+      undefined,
+      text,
+      true
+    );
 
-    createMessage(account.username, `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`, undefined, text, true);
+    console.log(account)
 
-    const isTokenValid = await fetch(
-      `http://${serverConfig.hostname}:${serverConfig.port}/api/auth-token`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          username: account.username,
-          token: account.token,
-        }),
-      }
-    )
-
-    if (!account) {
-      window.location.href = "/auth";
-      return;
-    }
-
-    const accountInfo = await fetch(`http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        username: account.username,
-        token: account.token
-      })
-    })
-
-    const accountInfoResponse = await accountInfo.json()
-
-    if (isTokenValid) {
       socket.emit("send_message", {
         media: mediaDataURL,
         text: text,
-        userID: accountInfoResponse.id,
+        token: account.token,
       });
-    } else {
-      window.location.href = "/auth";
-      return; // creating error message
-    }
   }
 }
 
 class SocketListeners {
   static async getMessage(senderID, group, text, mediaDataURL) {
-    let user = await fetch(`http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`, {
-      method: "POST",
-      headers: {"content-type": "application/json"},
-      body: JSON.stringify({
-        id: senderID
-      })
-    })
-    console.log(user)
+    let user = await fetch(
+      `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id: senderID,
+        }),
+      }
+    );
+    console.log(user);
 
-
-    user = await user.json()
-
+    user = await user.json();
 
     createMessage(user.username, user.avatar, mediaDataURL, text, false);
   }
@@ -112,8 +104,8 @@ function createMessage(author, avatar, media, text, my) {
   const authorUsername = document.createElement("a");
 
   authorUsername.textContent = author;
-  authorUsername.classList.add("username")
-  authorUsername.href = `/users/${author}`
+  authorUsername.classList.add("username");
+  authorUsername.href = `/users/${author}`;
 
   const messageText = document.createElement("p");
   messageText.textContent = text;
@@ -125,15 +117,15 @@ function createMessage(author, avatar, media, text, my) {
     message.appendChild(messageMedia);
   }
 
-  const userAvatar = document.createElement("img")
-  userAvatar.classList.add("avatar")
-  userAvatar.src = avatar
+  const userAvatar = document.createElement("img");
+  userAvatar.classList.add("avatar");
+  userAvatar.src = avatar;
 
-  message.appendChild(userAvatar)
+  message.appendChild(userAvatar);
 
   content.appendChild(message);
   message.appendChild(authorUsername);
-  message.appendChild(document.createElement("br"))
+  message.appendChild(document.createElement("br"));
   message.appendChild(messageText);
 }
 

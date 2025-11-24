@@ -32,7 +32,7 @@ app.set("view engine", "ejs");
 app.use("/media", express.static(path.join(__dirname, "..", "media")));
 app.use("/static", express.static(path.join(__dirname, "..", "styles")));
 app.use("/static", express.static(path.join(__dirname, "..", "js", "client")));
-app.use("/static", express.static(path.join(__dirname, "uploads")))
+app.use("/static", express.static(path.join(__dirname, "uploads")));
 app.use("/api", apiRoutes);
 
 app.use(pagesRoutes);
@@ -151,17 +151,36 @@ io.on("connection", (socket) => {
 
     media: ${message.media},
     text: ${message.text},
-    userID: ${message.userID}
+    token: ${message.token}
             `);
+
+    console.log(message);
 
     const db = await fs.promises.readFile(dbPath, "utf-8");
 
     const dbParsed = JSON.parse(db);
 
+    let haveThisUser = false;
+    let userID = null;
+
+    for (const user of dbParsed.users) {
+      const match = await bcrypt.compare(message.token, user.token);
+      if (match) {
+        haveThisUser = true;
+        userID = user.id; // брать userID только из сервера!
+        break;
+      }
+    }
+
+    if (!haveThisUser) {
+      console.log("don't really user");
+      return;
+    }
+
     const newMessage = {
       media: message.media,
       text: message.text,
-      userID: message.userID,
+      userID: userID,
     };
 
     dbParsed.messages.push(newMessage);
