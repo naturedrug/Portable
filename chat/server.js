@@ -120,6 +120,17 @@ app.get("/users/:slug", async (req, res) => {
   }
 });
 
+app.use((req, res, next) => {
+
+
+    console.log(`UNKNOWN ${req.path}`)
+
+    res.render("404", {
+        error: `unknown page ${req.path}`
+    })
+
+})
+
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -167,7 +178,7 @@ io.on("connection", (socket) => {
       const match = await bcrypt.compare(message.token, user.token);
       if (match) {
         haveThisUser = true;
-        userID = user.id; // брать userID только из сервера!
+        userID = user.id;
         break;
       }
     }

@@ -1,5 +1,5 @@
 const serverConfig = {
-    hostname: "26.235.102.234",
+    hostname: "localhost",
     port: 9999
 }
 

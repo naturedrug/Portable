@@ -6,6 +6,7 @@ import path from "path";
 const router = express.Router()
 
 
+
 router.get("/auth", async (req, res) => {
     const authHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/auth.html"))
 
@@ -23,6 +24,12 @@ router.get("/reg", async (req, res) => {
     const regHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/registration.html"))
 
     res.end(regHtml)
+})
+
+router.get("/", async (req, res) => {
+    const indexHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/index.html"))
+
+    res.end(indexHtml)
 })
 
 export default router

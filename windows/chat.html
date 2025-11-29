@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <link rel="shortcut icon" href="/media/icon.ico">
+    <link rel="stylesheet" href="/static/sideBar.css">
     <link rel="stylesheet" href="/static/globals.css">
     <link rel="stylesheet" href="/static/chat.css">
     <meta charset="UTF-8">
@@ -9,12 +10,16 @@
     <title>Chat</title>
 </head>
 <body>
+    <div class="sideBar">
+        <img src="/media/arrow-left.svg" alt="arrow left" class="closeSidebar">
+    </div>
     <div class="content"></div>
     <div class="sending">
         <input></input>
         <button>SEND</button>
     </div>
     <script src="/static/socket.io.min.js"></script>
+    <script src="/static/sideBar.js"></script>
     <script src="/static/chat.js" type="module"></script>
 </body>
 </html>

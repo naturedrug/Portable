@@ -1,3 +1,9 @@
 {
-  "tabs": []
+  "tabs": [
+    {
+      "title": "Анонимный чат NektoMe",
+      "id": 3,
+      "src": "https://nekto.me/chat/#/searching"
+    }
+  ]
 }
