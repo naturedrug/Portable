@@ -218,6 +218,30 @@ router.post(
       res.end("invalid token");
     }
 
+    let alreadyHaveThisUser = false;
+
+    if (req.body.newUsername != req.body.username) {
+      alreadyHaveThisUser = dbParsed.users.find(
+        (u) => u.username == req.body.newUsername
+      );
+    }
+
+    if (alreadyHaveThisUser) {
+      res.end(
+        JSON.stringify({
+          success: false,
+        })
+      );
+      console.log("already have this user 500");
+
+      return;
+    }
+
+    // it's a check user logic above
+    //
+    //
+    // under a just changing data
+
     if (
       req.body.newUsername &&
       user.avatar !=
@@ -254,7 +278,6 @@ router.post(
       "utf-8"
     );
 
-    res.writeHead(200, { "content-type": "application/json" });
     res.end(
       JSON.stringify({
         success: true,
@@ -263,7 +286,7 @@ router.post(
   }
 );
 
-router.post("new-channel", async (req, res) => {
+router.post("/new-channel", async (req, res) => {
   const database = await fs.promises.readFile(dbPath, "utf-8");
   const dbParsed = JSON.parse(database);
 
@@ -272,8 +295,8 @@ router.post("new-channel", async (req, res) => {
   /*
   req.body:
 
-  token,
   channelName,
+  token,
   avatar,
   desc,
 
@@ -330,6 +353,93 @@ router.post("new-channel", async (req, res) => {
     JSON.stringify(dbParsed, null, 2),
     "utf-8"
   );
+
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(
+    JSON.stringify({
+      success: true,
+    })
+  );
+});
+
+router.post("/join-channel", async (req, res) => {
+  const database = await fs.promises.readFile(dbPath, "utf-8");
+  const dbParsed = JSON.parse(database);
+
+  const body = req.body;
+
+  /*
+  username
+  token,
+  channelID
+  */
+
+  if (!body.token || !body.channelID || !body.username) {
+    res.writeHead(500, "application/json");
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
+
+    console.log("don't have required data");
+
+    return;
+  }
+
+  const user = dbParsed.users.find((u) => u.username === body.username)
+
+  const isTokenValid = await bcrypt.compare(body.token, user.token)
+
+  if (!isTokenValid) {
+        res.writeHead(500, "application/json")
+    res.end(JSON.stringify({
+      success: false
+    }))
+
+    console.log("token is not valid")
+
+    return
+
+  }
+
+  if (!user.channels) {
+    user.channels = []
+  }
+
+  user.channels.push({
+    channelID: body.channelID
+  })
+
+  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null ,2), 'utf-8')
+
+
+});
+
+// api/users
+router.get("/users", async (req, res) => {
+  const database = await fs.promises.readFile(dbPath, "utf-8");
+
+  const dbParsed = JSON.parse(database);
+
+  const users = [];
+
+  for (const user of dbParsed.users) {
+    const publicUser = {
+      username: user.username,
+      id: user.id,
+      avatar: user.avatar
+    };
+
+    users.push(publicUser);
+  }
+
+  if (users.length == dbParsed.users.length) {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(users));
+  } else {
+    console.log("users length is not");
+  }
 });
 
 export default router;

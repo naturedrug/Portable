@@ -1,21 +1,15 @@
 .sideBar {
-    position: fixed;
-    left: 0px;
-    top: 0px;
     width: 50px;
     height: 100%;
     max-width: 250px;
     background-color: rgba(0,0,0, 0.3);
     border-right: 1px solid rgb(53, 53, 53);
     z-index: 999;
-    transition: all 0.2s;
+    transition: ease-in-out 0.2s;
 }
 
 .closeSidebar {
     cursor: pointer;
-    position: absolute;
-    right: 5px;
-    top: 5px;
     width: 32px;
     height: 32px;
     transform: rotate(180deg);

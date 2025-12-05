@@ -68,7 +68,9 @@ app.post("/api/acc-info-by-id", async (req, res) => {
 
   // ONLY PUBLIC INFO
 
-  console.log(user);
+  console.log(bodyParsed.id)
+
+  console.log("acc-info-by-id: " + user);
 
   if (user) {
     res.writeHead(200, { "content-type": "application/json" });
@@ -202,6 +204,6 @@ io.on("connection", (socket) => {
       "utf-8"
     );
 
-    socket.broadcast.emit("server_broadcast_send_message", message);
+    socket.broadcast.emit("server_broadcast_send_message", newMessage);
   });
 });

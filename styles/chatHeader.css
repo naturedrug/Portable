@@ -1,0 +1,29 @@
+.header {
+  position: fixed;
+  width: 100%;
+  height: 75px;
+  top: 0px;
+  left: 0px;
+  border-bottom: 1px solid rgb(90, 90, 90);
+  background-color: black;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 60px;
+}
+
+.search {
+  padding: 10px;
+  font-size: 100%;
+  width: 70%;
+  background-color: rgb(30,30,30);
+  transition: all 0.2s;
+}
+
+.search:focus {
+    border-bottom: 1px solid whitesmoke;
+}
+
+.header svg {
+    margin-left: 20px;
+}

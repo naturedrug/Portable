@@ -36,7 +36,9 @@ socket.on("connect", () => {
   isConnected = true;
   console.log("! client connected: " + socket.id);
 });
+
 socket.on("server_broadcast_send_message", (message) => {
+
   SocketListeners.getMessage(
     message.userID,
     undefined,
@@ -46,7 +48,7 @@ socket.on("server_broadcast_send_message", (message) => {
 });
 
 const button = document.querySelector("button");
-const input = document.querySelector("input");
+const input = document.querySelector(".messageInput");
 const content = document.querySelector(".content");
 
 class DataSender {
@@ -63,8 +65,6 @@ class DataSender {
       true
     );
 
-    console.log(account)
-
       socket.emit("send_message", {
         media: mediaDataURL,
         text: text,
@@ -75,6 +75,8 @@ class DataSender {
 
 class SocketListeners {
   static async getMessage(senderID, group, text, mediaDataURL) {
+    console.log(senderID)
+
     let user = await fetch(
       `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
       {
@@ -85,7 +87,6 @@ class SocketListeners {
         }),
       }
     );
-    console.log(user);
 
     user = await user.json();
 
@@ -123,13 +124,17 @@ function createMessage(author, avatar, media, text, my) {
 
   message.appendChild(userAvatar);
 
+  const container = document.createElement("div")
+
+  container.classList.add("messageContainer")
+
   content.appendChild(message);
-  message.appendChild(authorUsername);
-  message.appendChild(document.createElement("br"));
-  message.appendChild(messageText);
+  message.appendChild(container)
+  container.appendChild(authorUsername);
+  container.appendChild(messageText);
 }
 
-window.addEventListener("keydown", (e) => {
+input.addEventListener("keydown", (e) => {
   if (e.key == "Enter") {
     DataSender.sendMessage(input.value, undefined);
   }
@@ -142,5 +147,8 @@ button.addEventListener("click", () => {
         return;
       };
 
-  DataSender.sendMessage(input.value, undefined);
+      if (isInputFocused) {
+        DataSender.sendMessage(input.value, undefined);
+      }
+
 });

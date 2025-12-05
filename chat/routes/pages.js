@@ -26,10 +26,4 @@ router.get("/reg", async (req, res) => {
     res.end(regHtml)
 })
 
-router.get("/", async (req, res) => {
-    const indexHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/index.html"))
-
-    res.end(indexHtml)
-})
-
 export default router
