@@ -1,22 +1,13 @@
-// async function joinChannel() {
-//     let response = await fetch("/api/join-channel", {
-//       method: "POST",
-//       headers: {"content-type": "application/json"},
-//       body: JSON.stringify({
-//         username: localStorageAccount.username,
-//         token: localStorageAccount.token,
-//         channelID: "sg5fdqlCGZwTBVmF3zLZl"
-//       })
-//     })
+import Channels from "./channels.js";
+import serverConfig from "./serverConfig.js";
 
-//     response = await response.json()
-// }
-
+const socket = io(`http://${serverConfig.hostname}:${serverConfig.port}`);
 
 class Sidebar {
   constructor() {
     this.isOpened = false;
     this.sideBar = document.querySelector(".sideBar");
+    this.chats = []
 
     this.sideBar.addEventListener("mouseover", () => {
       if (!this.isOpened) {
@@ -31,6 +22,35 @@ class Sidebar {
     });
 
     this.restoreChats();
+  }
+
+  createChatBlock(title, desc, avatar, roomId) {
+    const chatBlock = document.createElement("div")
+    chatBlock.classList.add("channel")
+
+    const channelTitle = document.createElement("h3")
+    channelTitle.classList.add("channelTitle")
+    channelTitle.textContent = title
+
+    const channelAvatar = document.createElement("img")
+    channelAvatar.classList.add("channelAvatar")
+    channelAvatar.src = avatar
+    channelAvatar.alt = "channel avatar"
+
+    const channelDesc = document.createElement("p")
+    channelDesc.classList.add("channelDesc")
+    channelDesc.textContent = desc
+
+
+    this.sideBar.appendChild(chatBlock)
+    chatBlock.appendChild(channelTitle)
+    chatBlock.appendChild(channelAvatar)
+    chatBlock.appendChild(channelDesc)
+
+    chatBlock.addEventListener("click", () => {
+      socket.emit("change-room", JSON.parse(localStorage.getItem("account")).token, roomId)
+      document.cookie = `room=${roomId}`
+    })
   }
 
   async restoreChats() {
@@ -56,6 +76,8 @@ class Sidebar {
 
     user = await user.json();
 
+    // Channels.joinChannel("d5kw-9dTQ8gBeEnug29pO", localStorageAccount.username, localStorageAccount.token)
+
 
 
 
@@ -64,9 +86,13 @@ class Sidebar {
       return;
     }
 
-    user.channels.forEach((channel) => {
-      console.log(channel)
-      // creating channels
+    user.channels.forEach(async (channel) => {
+      
+      const channelInfo = await Channels.channelInfo(channel.channelID)
+      
+      console.log(channelInfo)
+
+      this.createChatBlock(channelInfo.channelName, channelInfo.desc || "", channelInfo.avatar, channel.channelID)
     });
   }
 

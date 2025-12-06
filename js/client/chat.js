@@ -2,6 +2,13 @@ import serverConfig from "./serverConfig.js";
 
 const socket = io(`http://${serverConfig.hostname}:${serverConfig.port}`);
 
+function getCookie(name) {
+  let matches = document.cookie.match(new RegExp(
+    "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
 const account = JSON.parse(localStorage.getItem("account"));
 
 window.onload = async () => {
@@ -69,7 +76,7 @@ class DataSender {
         media: mediaDataURL,
         text: text,
         token: account.token,
-      });
+      }, getCookie("room"));
   }
 }
 

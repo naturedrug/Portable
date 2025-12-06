@@ -125,11 +125,11 @@ app.get("/users/:slug", async (req, res) => {
 app.use((req, res, next) => {
 
 
-    console.log(`UNKNOWN ${req.path}`)
+  console.log(`UNKNOWN ${req.path}`)
 
-    res.render("404", {
-        error: `unknown page ${req.path}`
-    })
+  res.render("404", {
+    error: `unknown page ${req.path}`
+  })
 
 })
 
@@ -158,7 +158,46 @@ io.on("connection", (socket) => {
 
     */
 
-  socket.on("send_message", async (message) => {
+  socket.on("change-room", async (token, roomId) => {
+    console.log(token, roomId)
+    if (!token || !roomId) {
+      console.log("change-room listener, don't have required data")
+
+      return
+    }
+
+    for (const room of socket.rooms) {
+      if (room !== socket.id) {
+        socket.leave(room);
+      }
+    }
+
+    const database = await fs.promises.readFile(dbPath, 'utf-8')
+    const dbParsed = JSON.parse(database)
+
+    let haveThisUser = false;
+    let userID = null;
+
+    for (const user of dbParsed.users) {
+      const match = await bcrypt.compare(token, user.token);
+      if (match) {
+        haveThisUser = true;
+        userID = user.id;
+        break;
+      }
+    }
+
+    if (!haveThisUser) {
+      console.log("don't really user");
+      return;
+    }
+
+    socket.join(roomId)
+
+  })
+
+
+  socket.on("send_message", async (message, roomId) => {
     console.log(`
     GETTING MESSAGE
 
@@ -175,12 +214,14 @@ io.on("connection", (socket) => {
 
     let haveThisUser = false;
     let userID = null;
+    let sender;
 
     for (const user of dbParsed.users) {
       const match = await bcrypt.compare(message.token, user.token);
       if (match) {
         haveThisUser = true;
         userID = user.id;
+        sender = user;
         break;
       }
     }
@@ -188,6 +229,20 @@ io.on("connection", (socket) => {
     if (!haveThisUser) {
       console.log("don't really user");
       return;
+    }
+
+    let isUserHaveThisChannel = false;
+
+    for (const channel of sender.channels) {
+      console.log(channel, roomId)
+      if (channel.channelID == roomId) {
+        isUserHaveThisChannel = true
+      }
+    }
+
+    if (!isUserHaveThisChannel) {
+      console.log("user dont have this channel (server listener)")
+      return
     }
 
     const newMessage = {
@@ -204,6 +259,6 @@ io.on("connection", (socket) => {
       "utf-8"
     );
 
-    socket.broadcast.emit("server_broadcast_send_message", newMessage);
+    socket.to(roomId).emit("server_send_message", newMessage);
   });
 });

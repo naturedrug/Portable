@@ -159,7 +159,9 @@ router.post("/auth-token", async (req, res) => {
 
   if (!user) {
     res.writeHead(500, { "content-type": "application/json" });
-    res.end("unknown user");
+    res.end(JSON.stringify({
+      success: false
+    }));
   }
 
   const isTokenValid = await bcrypt.compare(req.body.token, user.token);
@@ -245,7 +247,7 @@ router.post(
     if (
       req.body.newUsername &&
       user.avatar !=
-        `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
+      `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
     ) {
       // rename avatar image file when username is changed
 
@@ -334,7 +336,7 @@ router.post("/new-channel", async (req, res) => {
     res.writeHead(500, { "content-type": "application/json" });
     res.end(
       JSON.stringify({
-        error: `statusCode: 500, don't have enough data`,
+        error: `statusCode: 500, don't have this user`,
       })
     );
   }
@@ -375,7 +377,7 @@ router.post("/join-channel", async (req, res) => {
   */
 
   if (!body.token || !body.channelID || !body.username) {
-    res.writeHead(500, "application/json");
+    res.writeHead(500, { "content-type": "application/json" });
     res.end(
       JSON.stringify({
         success: false,
@@ -392,7 +394,7 @@ router.post("/join-channel", async (req, res) => {
   const isTokenValid = await bcrypt.compare(body.token, user.token)
 
   if (!isTokenValid) {
-        res.writeHead(500, "application/json")
+    res.writeHead(500, { "content-type": "application/json" })
     res.end(JSON.stringify({
       success: false
     }))
@@ -411,10 +413,54 @@ router.post("/join-channel", async (req, res) => {
     channelID: body.channelID
   })
 
-  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null ,2), 'utf-8')
+  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
+
+  res.writeHead(200, { "content-type": "application/json" })
+  res.end(JSON.stringify({
+    success: true
+  }))
 
 
 });
+
+router.post("/channel-info", async (req, res) => {
+  const database = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(database)
+
+  const body = req.body;
+
+  /*
+    channelID
+  */
+
+  if (!body.channelID) {
+    res.writeHead(500, { "content-type": "application/json" })
+    res.end(JSON.stringify({
+      success: false
+    }))
+    console.log("don't have enough data (/api/channel-info)")
+  }
+
+  const channel = dbParsed.channels.find((c) => c.channelID === body.channelID);
+
+  if (!channel) {
+    res.writeHead(500, { "content-type": "application/json" })
+    res.end(JSON.stringify({
+      success: false
+    }))
+    console.log(`don't have ${body.channelID} channel (/api/channel-info)`)
+  }
+
+  res.writeHead(200, {"content-type": "application"})
+  res.end(JSON.stringify({
+    channelName: channel.name,
+    author: channel.author,
+    avatar: channel.avatar,
+    desc: channel.desc
+  }))
+
+
+})
 
 // api/users
 router.get("/users", async (req, res) => {
