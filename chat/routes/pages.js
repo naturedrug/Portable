@@ -8,20 +8,20 @@ const router = express.Router()
 
 
 router.get("/auth", async (req, res) => {
-    const authHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/auth.html"))
+    const authHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "client", "templates", "auth.html"))
 
 
     res.end(authHtml)
 })
 
 router.get("/chat", async (req, res) => {
-    const chatHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", '..', "windows", "/chat.html"))
+    const chatHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", 'client', "templates", "chat.html"))
 
     res.end(chatHtml)
 })
 
 router.get("/reg", async (req, res) => {
-    const regHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "..", "windows", "/registration.html"))
+    const regHtml = await fs.promises.readFile(path.join(import.meta.dirname, "..", "client", "templates", "registration.html"))
 
     res.end(regHtml)
 })

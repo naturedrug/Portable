@@ -159,9 +159,11 @@ router.post("/auth-token", async (req, res) => {
 
   if (!user) {
     res.writeHead(500, { "content-type": "application/json" });
-    res.end(JSON.stringify({
-      success: false
-    }));
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
   }
 
   const isTokenValid = await bcrypt.compare(req.body.token, user.token);
@@ -247,7 +249,7 @@ router.post(
     if (
       req.body.newUsername &&
       user.avatar !=
-      `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
+        `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
     ) {
       // rename avatar image file when username is changed
 
@@ -288,7 +290,7 @@ router.post(
   }
 );
 
-router.post("/new-channel", async (req, res) => {
+router.post("/new-channel", upload.single("avatar"), async (req, res) => {
   const database = await fs.promises.readFile(dbPath, "utf-8");
   const dbParsed = JSON.parse(database);
 
@@ -341,11 +343,18 @@ router.post("/new-channel", async (req, res) => {
     );
   }
 
+  const channelID = nanoid(21);
+
+  await fs.promises.rename(
+    path.join(__dirname, "..", "uploads", req.file.originalname),
+    path.join(__dirname, "..", "uploads", `${channelID}.jpg`)
+  );
+
   const newChannel = {
     name: body.channelName,
     author: userID,
-    avatar: body.avatar,
-    channelID: nanoid(21),
+    avatar: `/static/${channelID}.jpg`,
+    channelID: channelID,
   };
 
   dbParsed.channels.push(newChannel);
@@ -389,43 +398,48 @@ router.post("/join-channel", async (req, res) => {
     return;
   }
 
-  const user = dbParsed.users.find((u) => u.username === body.username)
+  const user = dbParsed.users.find((u) => u.username === body.username);
 
-  const isTokenValid = await bcrypt.compare(body.token, user.token)
+  const isTokenValid = await bcrypt.compare(body.token, user.token);
 
   if (!isTokenValid) {
-    res.writeHead(500, { "content-type": "application/json" })
-    res.end(JSON.stringify({
-      success: false
-    }))
+    res.writeHead(500, { "content-type": "application/json" });
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
 
-    console.log("token is not valid")
+    console.log("token is not valid");
 
-    return
-
+    return;
   }
 
   if (!user.channels) {
-    user.channels = []
+    user.channels = [];
   }
 
   user.channels.push({
-    channelID: body.channelID
-  })
+    channelID: body.channelID,
+  });
 
-  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
+  await fs.promises.writeFile(
+    dbPath,
+    JSON.stringify(dbParsed, null, 2),
+    "utf-8"
+  );
 
-  res.writeHead(200, { "content-type": "application/json" })
-  res.end(JSON.stringify({
-    success: true
-  }))
-
-
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(
+    JSON.stringify({
+      success: true,
+    })
+  );
 });
 
 router.post("/channel-info", async (req, res) => {
-  const database = await fs.promises.readFile(dbPath, 'utf-8')
-  const dbParsed = JSON.parse(database)
+  const database = await fs.promises.readFile(dbPath, "utf-8");
+  const dbParsed = JSON.parse(database);
 
   const body = req.body;
 
@@ -434,33 +448,94 @@ router.post("/channel-info", async (req, res) => {
   */
 
   if (!body.channelID) {
-    res.writeHead(500, { "content-type": "application/json" })
-    res.end(JSON.stringify({
-      success: false
-    }))
-    console.log("don't have enough data (/api/channel-info)")
+    res.writeHead(500, { "content-type": "application/json" });
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
+    console.log("don't have enough data (/api/channel-info)");
   }
 
   const channel = dbParsed.channels.find((c) => c.channelID === body.channelID);
 
   if (!channel) {
-    res.writeHead(500, { "content-type": "application/json" })
-    res.end(JSON.stringify({
-      success: false
-    }))
-    console.log(`don't have ${body.channelID} channel (/api/channel-info)`)
+    res.writeHead(500, { "content-type": "application/json" });
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
+    console.log(`don't have ${body.channelID} channel (/api/channel-info)`);
   }
 
-  res.writeHead(200, {"content-type": "application"})
-  res.end(JSON.stringify({
-    channelName: channel.name,
-    author: channel.author,
-    avatar: channel.avatar,
-    desc: channel.desc
-  }))
+  res.writeHead(200, { "content-type": "application" });
+  res.end(
+    JSON.stringify({
+      channelName: channel.name,
+      author: channel.author,
+      avatar: channel.avatar,
+      desc: channel.desc,
+    })
+  );
+});
 
+router.post("/full-channel-info", async (req, res) => {
+  const body = req.body;
 
-})
+  /*
+    channelID,
+    token
+  */
+
+  const database = await fs.promises.readFile(dbPath, "utf-8");
+  const dbParsed = JSON.parse(database);
+
+  let haveThisUser = false;
+
+  let userFromDB;
+
+  for (const user of dbParsed.users) {
+    const match = await bcrypt.compare(body.token, user.token);
+    if (match) {
+      haveThisUser = true;
+      userFromDB = user;
+      break;
+    }
+  }
+
+  if (!haveThisUser) {
+    console.log("don't have this user (full-channel-info)");
+    res.writeHead(500);
+    return;
+  }
+
+  const channel = dbParsed.channels.find((c) => c.channelID === body.channelID);
+
+  if (!channel) {
+    console.log("don't have this channel (full-channel-info)");
+
+    res.writeHead(500);
+    return;
+  }
+
+  let isUserHaveThisChannel = false;
+
+  for (const channel of userFromDB.channels) {
+    if (channel.channelID == body.channelID) {
+      isUserHaveThisChannel = true;
+    }
+  }
+
+  if (!isUserHaveThisChannel) {
+    console.log("user dont have this channel (server api listener)");
+    res.writeHead(500);
+    return;
+  }
+
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(JSON.stringify(channel));
+});
 
 // api/users
 router.get("/users", async (req, res) => {
@@ -474,7 +549,7 @@ router.get("/users", async (req, res) => {
     const publicUser = {
       username: user.username,
       id: user.id,
-      avatar: user.avatar
+      avatar: user.avatar,
     };
 
     users.push(publicUser);

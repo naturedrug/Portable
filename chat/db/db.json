@@ -1,8 +1,5 @@
 {
-  "users": [
-  ],
-  "messages": [
-  ],
-  "channels": [
-  ]
+  "users": [],
+  "messages": [],
+  "channels": []
 }

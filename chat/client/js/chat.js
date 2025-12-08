@@ -1,6 +1,6 @@
 import serverConfig from "./serverConfig.js";
 
-const socket = io(`http://${serverConfig.hostname}:${serverConfig.port}`);
+import socket from "./socket.js";
 
 function getCookie(name) {
   let matches = document.cookie.match(new RegExp(
@@ -44,7 +44,8 @@ socket.on("connect", () => {
   console.log("! client connected: " + socket.id);
 });
 
-socket.on("server_broadcast_send_message", (message) => {
+socket.on("server_send_message", (message) => {
+
 
   SocketListeners.getMessage(
     message.userID,

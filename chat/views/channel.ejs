@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <link rel="icon" href="/media/icon.ico">
+        <link rel="stylesheet" href="/static/globals.css">
+        <link rel="stylesheet" href="/static/channel.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@<%= channel.name %></title>
+</head>
+<body>
+    <div class="invite">
+        <img src=<%= channel.avatar %> alt="avatar">
+        <p><%= channel.name  %></p>
+        <button class="joinButton">Присоедениться</button>
+    </div>
+    <script src="/static/channelJoin.js" type="module"></script>
+</body>
+</html>

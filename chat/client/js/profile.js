@@ -93,9 +93,9 @@ confirmSettings.addEventListener("click", async () => {
         localStorage.setItem("account", JSON.stringify({
             username: newUsername,
             token: localStorageAccount.token
-    
+
         }))
-    
+
         document.cookie = `username=${newUsername}`
 
         window.location.href = `/users/${newUsername}`

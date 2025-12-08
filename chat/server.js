@@ -29,9 +29,9 @@ app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
-app.use("/media", express.static(path.join(__dirname, "..", "media")));
-app.use("/static", express.static(path.join(__dirname, "..", "styles")));
-app.use("/static", express.static(path.join(__dirname, "..", "js", "client")));
+app.use("/media", express.static(path.join(__dirname, "client", "media")));
+app.use("/static", express.static(path.join(__dirname, "client", "styles")));
+app.use("/static", express.static(path.join(__dirname, "client", "js")));
 app.use("/static", express.static(path.join(__dirname, "uploads")));
 app.use("/api", apiRoutes);
 
@@ -122,6 +122,30 @@ app.get("/users/:slug", async (req, res) => {
   }
 });
 
+app.get("/@:channel", async (req, res) => {
+  const channelslug = req.params.channel
+
+  const database = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(database)
+
+  let channelFromDB = dbParsed.channels.find((c) => c.name === channelslug)
+
+
+  console.log(channelFromDB)
+
+  if (channelFromDB) {
+    res.cookie("channelid", channelFromDB.channelID)
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.render("channel", {
+      channel: channelFromDB,
+    });
+  } else {
+    res.render("404", {
+      error: `unknown channel ${channelslug}`
+    })
+  }
+})
+
 app.use((req, res, next) => {
 
 
@@ -159,7 +183,6 @@ io.on("connection", (socket) => {
     */
 
   socket.on("change-room", async (token, roomId) => {
-    console.log(token, roomId)
     if (!token || !roomId) {
       console.log("change-room listener, don't have required data")
 
@@ -231,6 +254,11 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (!sender.channels) {
+      console.log("sender has no channels")
+      return
+    }
+
     let isUserHaveThisChannel = false;
 
     for (const channel of sender.channels) {
@@ -251,13 +279,21 @@ io.on("connection", (socket) => {
       userID: userID,
     };
 
-    dbParsed.messages.push(newMessage);
+    const channelFromDB = dbParsed.channels.find((c) => roomId === c.channelID)
+
+    if (!channelFromDB.messages) {
+      channelFromDB.messages = []
+    }
+
+    channelFromDB.messages.push(newMessage);
 
     await fs.promises.writeFile(
       dbPath,
       JSON.stringify(dbParsed, null, 2),
       "utf-8"
     );
+
+    console.log(`TO ${roomId}`)
 
     socket.to(roomId).emit("server_send_message", newMessage);
   });

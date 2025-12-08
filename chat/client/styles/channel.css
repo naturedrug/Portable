@@ -1,0 +1,30 @@
+
+
+.invite {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.invite img {
+    width: 256px;
+    height: 256px;
+    border-radius: 50%;
+}
+
+.invite .joinButton {
+    background-color: black;
+    padding: 20px;
+    border: 1px solid rgb(50,50,50);
+    transition: all 0.2s;
+}
+
+.invite .joinButton:hover {
+    color: black;
+    background-color: white;
+}

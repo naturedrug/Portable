@@ -1,0 +1,54 @@
+.sideBar {
+    position: relative;
+    width: 100px;
+    height: 100%;
+    max-width: 250px;
+    background-color: rgba(0,0,0, 1);
+    border-right: 1px solid rgb(53, 53, 53);
+    z-index: 999;
+    transition: ease-in-out 0.2s;
+    padding-top: 100px;
+}
+
+.newChat {
+    cursor: pointer;
+    position: absolute;
+    width: 100%;
+    left: 2px;
+    top: 2px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgb(70, 70 ,70);
+}
+
+.newChat svg {
+    padding: 5px;
+    width: 64px;
+    height: 63px;
+}
+
+
+.channelAvatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.channelTitle {
+    font-weight: 100;
+    margin: 0;
+}
+
+.channel {
+    cursor: pointer;
+    width: 100%;
+    border-bottom: 1px solid rgb(70, 70 ,70);
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.channel:hover {
+    background-color: rgb(50,50,50);
+}
