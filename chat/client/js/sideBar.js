@@ -46,6 +46,8 @@ class NewChannelPrompt {
     });
 
     response = await response.json();
+
+    this.newChannelPrompt.style.display = "none";
   }
 }
 
@@ -95,7 +97,7 @@ class Sidebar {
     chatBlock.appendChild(channelAvatar);
     chatBlock.appendChild(channelDesc);
 
-    function createNewMessageBlock(where ,author, avatar, media, text, my) {
+    function createNewMessageBlock(where, author, avatar, media, text, my) {
       const message = document.createElement("div");
       message.classList.add("message");
 
@@ -145,46 +147,54 @@ class Sidebar {
       );
       document.cookie = `room=${roomId}`;
 
-      if (this.loadedChats.includes(roomId)) {
-        return;
-      }
 
-      this.loadedChats.push(roomId);
+      if (!this.loadedChats.includes(roomId)) {
+        this.loadedChats.push(roomId);
 
-      const loadChat = document.createElement("div");
-      loadChat.classList.add(`chat-${roomId}`);
+        const loadChat = document.createElement("div");
+        loadChat.classList.add(`chat-${roomId}`, "chat");
 
-      messagesDiv.appendChild(loadChat);
+        messagesDiv.appendChild(loadChat);
 
-      let channelInfo = await fetch("/api/full-channel-info", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          channelID: roomId,
-          token: JSON.parse(localStorage.getItem("account")).token,
-        }),
-      });
-
-      channelInfo = await channelInfo.json();
-
-      channelInfo.messages.forEach(async (message) => {
-
-        let userInfo = await fetch("/api/acc-info-by-id", {
+        let channelInfo = await fetch("/api/full-channel-info", {
           method: "POST",
-          headers: {"content-type": "application/json"},
+          headers: {
+            "content-type": "application/json",
+          },
           body: JSON.stringify({
-            id: message.userID
+            channelID: roomId,
+            token: JSON.parse(localStorage.getItem("account")).token,
+          }),
+        });
+
+        channelInfo = await channelInfo.json();
+
+        channelInfo.messages.forEach(async (message) => {
+
+          let userInfo = await fetch("/api/acc-info-by-id", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              id: message.userID
+            })
           })
-        })
 
-        userInfo = await userInfo.json()
+          userInfo = await userInfo.json()
 
-        console.log(userInfo)
+          createNewMessageBlock(loadChat, userInfo.username, userInfo.avatar, "", message.text)
 
-        createNewMessageBlock(loadChat, userInfo.username, userInfo.avatar, "", message.text)
-      });
+
+        });
+      }
+      const loadedChatsInDOM = document.querySelectorAll(".content .chat")
+      const selectedChat = document.querySelector(`.content .chat-${roomId}`)
+
+      loadedChatsInDOM.forEach((chat) => {
+        chat.style.display = "none"
+      })
+
+      selectedChat.style.display = "block"
+
     });
   }
 
@@ -229,11 +239,23 @@ class Sidebar {
   }
 
   openSidebar() {
+    const chatsP = document.querySelectorAll(".sideBar .channel .channelTitle")
+
+    chatsP.forEach((chat) => {
+      chat.style.opacity = 1
+    })
+
     this.sideBar.style.width = "20%";
     this.isOpened = true;
   }
 
   closeSidebar() {
+    const chatsP = document.querySelectorAll(".sideBar .channel .channelTitle")
+
+    chatsP.forEach((chat) => {
+      chat.style.opacity = 0
+    })
+
     this.sideBar.style.width = "100px";
     this.isOpened = false;
   }

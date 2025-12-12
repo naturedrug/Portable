@@ -49,7 +49,7 @@ socket.on("server_send_message", (message) => {
 
   SocketListeners.getMessage(
     message.userID,
-    undefined,
+    message.room,
     message.text,
     message.media
   );
@@ -57,7 +57,7 @@ socket.on("server_send_message", (message) => {
 
 const button = document.querySelector("button");
 const input = document.querySelector(".messageInput");
-const content = document.querySelector(".content");
+// const content = document.querySelector(".content");
 
 class DataSender {
   static async sendMessage(text, mediaDataURL) {
@@ -66,6 +66,7 @@ class DataSender {
     input.value = "";
 
     createMessage(
+      document.querySelector(`.chat-${getCookie("room")}`),
       account.username,
       `http://${serverConfig.hostname}:${serverConfig.port}/static/${encodeURI(account.username)}.jpg`,
       undefined,
@@ -82,7 +83,7 @@ class DataSender {
 }
 
 class SocketListeners {
-  static async getMessage(senderID, group, text, mediaDataURL) {
+  static async getMessage(senderID, room, text, mediaDataURL) {
     console.log(senderID)
 
     let user = await fetch(
@@ -98,11 +99,14 @@ class SocketListeners {
 
     user = await user.json();
 
-    createMessage(user.username, user.avatar, mediaDataURL, text, false);
+    if (document.querySelector(`.chat-${room}`)) {
+      createMessage(document.querySelector(`.chat-${room}`), user.username, user.avatar, mediaDataURL, text, false);
+    }
+
   }
 }
 
-function createMessage(author, avatar, media, text, my) {
+function createMessage(where, author, avatar, media, text, my) {
   const message = document.createElement("div");
   message.classList.add("message");
 
@@ -136,7 +140,7 @@ function createMessage(author, avatar, media, text, my) {
 
   container.classList.add("messageContainer")
 
-  content.appendChild(message);
+  where.appendChild(message);
   message.appendChild(container)
   container.appendChild(authorUsername);
   container.appendChild(messageText);

@@ -20,19 +20,19 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    border-bottom: 1px solid rgb(70, 70 ,70);
+    height: 75px;
 }
 
 .newChat svg {
     padding: 5px;
-    width: 64px;
-    height: 63px;
+    width: 48px;
+    height: 48px;
 }
 
 
 .channelAvatar {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
 }
 
@@ -51,4 +51,8 @@
 
 .channel:hover {
     background-color: rgb(50,50,50);
+}
+
+.channelTitle {
+    transition: all 0.2s;
 }

@@ -42,8 +42,8 @@ app.post("/api/acc-info", async (req, res) => {
 
   const dbParsed = JSON.parse(db);
 
-  const bodyParsed = req.body;
-
+  const bodyParsed = req.body
+  
   const user = dbParsed.users.find((u) => bodyParsed.username === u.username);
 
   const isTokenValid = await bcrypt.compare(bodyParsed.token, user.token);
@@ -276,7 +276,7 @@ io.on("connection", (socket) => {
     const newMessage = {
       media: message.media,
       text: message.text,
-      userID: userID,
+      userID: userID
     };
 
     const channelFromDB = dbParsed.channels.find((c) => roomId === c.channelID)
@@ -294,6 +294,8 @@ io.on("connection", (socket) => {
     );
 
     console.log(`TO ${roomId}`)
+
+    newMessage.room = roomId
 
     socket.to(roomId).emit("server_send_message", newMessage);
   });
