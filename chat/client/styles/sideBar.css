@@ -1,6 +1,6 @@
 .sideBar {
-    position: relative;
-    width: 100px;
+    position: fixed;
+    width: 75px;
     height: 100%;
     max-width: 250px;
     background-color: rgba(0,0,0, 1);
@@ -39,6 +39,7 @@
 .channelTitle {
     font-weight: 100;
     margin: 0;
+    opacity: 0;
 }
 
 .channel {

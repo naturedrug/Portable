@@ -12,6 +12,8 @@ function getCookie(name) {
 const account = JSON.parse(localStorage.getItem("account"));
 
 window.onload = async () => {
+
+
   if (!localStorage.getItem("account")) {
     window.location.href = "/auth";
   }

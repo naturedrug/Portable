@@ -138,6 +138,8 @@ class Sidebar {
     }
 
     chatBlock.addEventListener("click", async () => {
+      this.openPreload()
+
       console.log("change-room to " + roomId);
 
       socket.emit(
@@ -169,22 +171,27 @@ class Sidebar {
 
         channelInfo = await channelInfo.json();
 
-        channelInfo.messages.forEach(async (message) => {
+        if (channelInfo.messages) {
 
-          let userInfo = await fetch("/api/acc-info-by-id", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              id: message.userID
+          channelInfo.messages.forEach(async (message) => {
+
+            let userInfo = await fetch("/api/acc-info-by-id", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                id: message.userID
+              })
             })
-          })
 
-          userInfo = await userInfo.json()
+            userInfo = await userInfo.json()
 
-          createNewMessageBlock(loadChat, userInfo.username, userInfo.avatar, "", message.text)
+            createNewMessageBlock(loadChat, userInfo.username, userInfo.avatar, "", message.text)
 
 
-        });
+          });
+        }
+
+
       }
       const loadedChatsInDOM = document.querySelectorAll(".content .chat")
       const selectedChat = document.querySelector(`.content .chat-${roomId}`)
@@ -195,6 +202,7 @@ class Sidebar {
 
       selectedChat.style.display = "block"
 
+      this.closePreload()
     });
   }
 
@@ -223,10 +231,15 @@ class Sidebar {
 
     if (!user.channels) {
       console.log("don't have any chats");
+          document.querySelector(".preloader").style.opacity = 0
+
+    setTimeout(() => {
+      document.querySelector(".preloader").style.display = "none"
+    }, 100)
       return;
     }
 
-    user.channels.forEach(async (channel) => {
+    for (const channel of user.channels) {
       const channelInfo = await Channels.channelInfo(channel.channelID);
 
       this.createChatBlock(
@@ -235,7 +248,15 @@ class Sidebar {
         channelInfo.avatar,
         channel.channelID
       );
-    });
+    }
+
+
+
+    document.querySelector(".preloader").style.opacity = 0
+
+    setTimeout(() => {
+      document.querySelector(".preloader").style.display = "none"
+    }, 100)
   }
 
   openSidebar() {
@@ -245,8 +266,10 @@ class Sidebar {
       chat.style.opacity = 1
     })
 
-    this.sideBar.style.width = "20%";
+    this.sideBar.style.width = "200px";
     this.isOpened = true;
+
+    document.querySelector(".content").style.marginLeft = "220px"
   }
 
   closeSidebar() {
@@ -256,8 +279,19 @@ class Sidebar {
       chat.style.opacity = 0
     })
 
-    this.sideBar.style.width = "100px";
+    this.sideBar.style.width = "75px";
+    document.querySelector(".content").style.marginLeft = "95px"
     this.isOpened = false;
+  }
+
+  openPreload() {
+    const preloader = document.querySelector(".contentPreloader")
+    preloader.style.display = "flex"
+  }
+
+  closePreload() {
+    const preloader = document.querySelector(".contentPreloader")
+    preloader.style.display = "none"
   }
 }
 
