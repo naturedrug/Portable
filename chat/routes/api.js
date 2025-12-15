@@ -249,7 +249,7 @@ router.post(
     if (
       req.body.newUsername &&
       user.avatar !=
-        `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
+      `http://${serverConfig.hostname}:${serverConfig.port}/media/people.png`
     ) {
       // rename avatar image file when username is changed
 
@@ -382,7 +382,7 @@ router.post("/join-channel", async (req, res) => {
   /*
   username
   token,
-  channelID
+  channelID or channelName
   */
 
   if (!body.token || !body.channelID || !body.username) {
@@ -419,9 +419,35 @@ router.post("/join-channel", async (req, res) => {
     user.channels = [];
   }
 
-  user.channels.push({
-    channelID: body.channelID,
-  });
+  const channelById = dbParsed.channels.find((c) => c.channelID === body.channelID)
+  const channelByName = dbParsed.channels.find((c) => c.name === body.channelID)
+
+  if (!channelById && !channelByName) {
+    res.writeHead(500, { "content-type": "application/json" });
+
+    console.log("don't have this channel (/api/join-channel)")
+
+
+    res.end(
+      JSON.stringify({
+        success: false,
+      })
+    );
+
+
+    return;
+  }
+
+  if (channelById) {
+    user.channels.push({
+      channelID: channelById.channelID,
+    });
+  } else if (channelByName) {
+    user.channels.push({
+      channelID: channelByName.channelID,
+    });
+  }
+
 
   await fs.promises.writeFile(
     dbPath,

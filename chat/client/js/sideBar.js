@@ -45,9 +45,18 @@ class NewChannelPrompt {
       body: formData,
     });
 
-    response = await response.json();
+    response.json().then((data, err) => {
+      this.newChannelPrompt.style.display = "none";
 
-    this.newChannelPrompt.style.display = "none";
+
+        Channels.joinChannel(this.channelNameInput.value, localStorageAccount.username, localStorageAccount.token,
+          () => {
+            window.location.reload()
+        })
+
+  
+    })
+
   }
 }
 
@@ -75,7 +84,7 @@ class Sidebar {
     this.restoreChats();
   }
 
-  createChatBlock(title, desc, avatar, roomId) {
+  createChatBlock(title, avatar, roomId) {
     const chatBlock = document.createElement("div");
     chatBlock.classList.add("channel");
 
@@ -88,14 +97,10 @@ class Sidebar {
     channelAvatar.src = avatar;
     channelAvatar.alt = "channel avatar";
 
-    const channelDesc = document.createElement("p");
-    channelDesc.classList.add("channelDesc");
-    channelDesc.textContent = desc;
 
     this.sideBar.appendChild(chatBlock);
     chatBlock.appendChild(channelTitle);
     chatBlock.appendChild(channelAvatar);
-    chatBlock.appendChild(channelDesc);
 
     function createNewMessageBlock(where, author, avatar, media, text, my) {
       const message = document.createElement("div");
@@ -242,9 +247,14 @@ class Sidebar {
     for (const channel of user.channels) {
       const channelInfo = await Channels.channelInfo(channel.channelID);
 
+      if (channelInfo.channelName.length > 15) {
+        channelInfo.channelName = channelInfo.channelName.slice(0, 15)
+
+        channelInfo.channelName += " ..."
+      }
+
       this.createChatBlock(
         channelInfo.channelName,
-        channelInfo.desc || "",
         channelInfo.avatar,
         channel.channelID
       );
@@ -264,12 +274,16 @@ class Sidebar {
 
     chatsP.forEach((chat) => {
       chat.style.opacity = 1
+
+            setTimeout(() => {
+        chat.style.display = "block"
+      }, 100)
     })
 
     this.sideBar.style.width = "200px";
     this.isOpened = true;
 
-    document.querySelector(".content").style.marginLeft = "220px"
+    document.querySelector(".content").style.marginLeft = "240px"
   }
 
   closeSidebar() {
@@ -277,10 +291,14 @@ class Sidebar {
 
     chatsP.forEach((chat) => {
       chat.style.opacity = 0
+
+      setTimeout(() => {
+        chat.style.display = "none"
+      }, 100)
     })
 
     this.sideBar.style.width = "75px";
-    document.querySelector(".content").style.marginLeft = "95px"
+    document.querySelector(".content").style.marginLeft = "115px"
     this.isOpened = false;
   }
 

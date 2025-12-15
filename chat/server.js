@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 import apiRoutes from "./routes/api.js";
 import pagesRoutes from "./routes/pages.js";
 
-import serverConfig from "../js/client/serverConfig.js";
+import serverConfig from "./client/js/serverConfig.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

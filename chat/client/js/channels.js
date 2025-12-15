@@ -21,7 +21,7 @@ class Channels {
         }
     }
 
-    static async joinChannel(channelID, username, token) {
+    static async joinChannel(channelID, username, token, callback) {
         let response = await fetch("/api/join-channel", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -35,6 +35,7 @@ class Channels {
         response = await response.json()
 
         if (response.success) {
+            callback()
             return true
         } else {
             return false
