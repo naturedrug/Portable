@@ -8,54 +8,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= user.username %></title>
 </head>
-<% if (user.mine == true) { %>
-  <body>
-      <div class="container">
-        <div class="profile">
-          <div class="avatar">
-            <img
-              src="<%= user.avatar || 'http://localhost:9999/media/people.png' %>"
-              alt="Аватар пользователя"
-            />
-            <span class="bio"><%= user.bio || "" %></span>
+<body>
+  <div class="alertBar">
+    <p></p>
+  </div>
+  <% if (user.mine == true) { %>
+        <div class="container">
+          <div class="profile">
+            <div class="avatar">
+              <img
+                src="<%= user.avatar || 'http://localhost:9999/media/people.png' %>"
+                alt="Аватар пользователя"
+              />
+              <span class="bio"><%= user.bio || "" %></span>
+            </div>
+            <h2 class="username"><%= user.username %>
+            </h2>
+            <div class="dataChange">
+     <img src="/media/settings.svg" alt="settings">
+   </div>
           </div>
-          <h2 class="username"><%= user.username %>
-          </h2>
-          <div class="dataChange">
-   <img src="/media/settings.svg" alt="settings">
- </div>
         </div>
-      </div>
-      <div class="settings">
-        <img src="/media/close.svg" alt="close" class="closeSettings">
-
-        <div class="options">
-          <button class="option account">Account</button>
-      </div>
-        <div class="values">
-          <div class="accountValues valuesContainer">
-            <h3>Имя пользователя</h3>
-            <input type="text" class="value" id="usernameValue" value=<%= user.username %> >
-            <h3>Аватар</h3>
-            <input type="file" class="value" id="avatarValue">
+        <div class="settings">
+          <img src="/media/close.svg" alt="close" class="closeSettings">
+  
+          <div class="options">
+            <button class="option account">Account</button>
+        </div>
+          <div class="values">
+            <div class="accountValues valuesContainer">
+              <h3>Имя пользователя</h3>
+              <input type="text" class="value" id="usernameValue" value=<%= user.username %> >
+              <h3>Аватар</h3>
+              <input type="file" class="value" id="avatarValue">
+            </div>
+            <button class="confirmButton">Подтвердить</button>
           </div>
-          <button class="confirmButton">Подтвердить</button>
         </div>
-      </div>
-  </body>
-  <script src="/static/profile.js"></script>
-<% } else { %>
-  <body>
-      <div class="container">
-        <div class="profile">
-          <img
-            src="<%= user.avatar || 'http://localhost:9999/media/people.png' %>"
-            alt="Аватар пользователя"
-          />
-          <h2><%= user.username %></h2>
-          <p><%= user.bio %></p>
+    <script src="/static/profileSettings.js"></script>
+  <% } else { %>
+        <div class="container">
+  <div class="profile">
+            <div class="avatar">
+              <img
+                src="<%= user.avatar || 'http://localhost:9999/media/people.png' %>"
+                alt="Аватар пользователя"
+              />
+              <span class="bio"><%= user.bio || "" %></span>
+            </div>
+            <h2 class="username"><%= user.username %>
+            </h2>
+  
+            <div class="addFriend">
+              <svg viewBox="0 0 64.00 64.00" xmlns="http://www.w3.org/2000/svg" stroke-width="1.536" stroke="#ffffff" fill="none" transform="matrix(1, 0, 0, 1, 0, 0)"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(0,0), scale(1)"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="#CCCCCC" stroke-width="1.28"></g><g id="SVGRepo_iconCarrier"><circle cx="29.22" cy="16.28" r="11.14"></circle><path d="M41.32,35.69c-2.69-1.95-8.34-3.25-12.1-3.25h0A22.55,22.55,0,0,0,6.67,55h29.9"></path><circle cx="45.38" cy="46.92" r="11.94"></circle><line x1="45.98" y1="39.8" x2="45.98" y2="53.8"></line><line x1="38.98" y1="46.8" x2="52.98" y2="46.8"></line></g></svg>
+            </div>
+            </div>
         </div>
-      </div>
-  </body>
-  <%} %>
+        <script src="/static/profileNotMine.js"></script>
+    <%} %>
+</body>
 </html>

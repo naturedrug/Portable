@@ -16,6 +16,7 @@ import apiRoutes from "./routes/api.js";
 import pagesRoutes from "./routes/pages.js";
 
 import serverConfig from "./client/js/serverConfig.js";
+import { nanoid } from "nanoid";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,40 +86,45 @@ app.post("/api/acc-info-by-id", async (req, res) => {
 app.get("/users/:slug", async (req, res) => {
   const slug = req.params.slug;
 
-  const db = await fs.promises.readFile(dbPath, "utf-8");
+  try {
+    const db = await fs.promises.readFile(dbPath, "utf-8");
+    const dbParsed = JSON.parse(db);
 
-  const dbParsed = JSON.parse(db);
+    const user = dbParsed.users.find((u) => u.username == slug);
 
-  const user = dbParsed.users.find((u) => u.username == slug);
 
-  // checking authorization
-
-  if (!user) {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-
-    res.render("404", {
-      error: `unknown user ${slug}`,
-    });
-  }
-
-  if (!req.cookies?.token) {
-    return;
-  }
-
-  if (user) {
-    const isTokenValid = await bcrypt.compare(req.cookies?.token, user.token);
-
-    const isMine = dbParsed.users.find(
-      (u) => u.username == slug && isTokenValid
-    );
-
-    if (isMine) {
-      user.mine = true;
+    if (!user) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.render("404", {
+        error: `unknown user ${slug}`,
+      });
     }
 
+
+    let isMine = false;
+    
+
+    if (req.cookies?.token) {
+      const isTokenValid = await bcrypt.compare(req.cookies.token, user.token);
+      isMine = isTokenValid;
+    }
+
+
+    const userWithMineFlag = {
+      ...user,
+      mine: isMine
+    };
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.render("profile", {
-      user: user,
+    return res.render("profile", {
+      user: userWithMineFlag,
+    });
+
+  } catch (error) {
+    console.error("Error loading user profile:", error);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.render("500", {
+      error: "Internal server error",
     });
   }
 });
@@ -146,6 +152,63 @@ app.get("/@:channel", async (req, res) => {
     })
   }
 })
+
+app.get("/invite=:inviteCode", async (req, res) => {
+  const inviteCode = req.params.inviteCode
+
+  if (!req.cookies.token) {console.log("don't have token for inviting"); return}
+
+  const db = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(db)
+
+  const userWithThisCode = dbParsed.users.find((u) => u.invite == inviteCode)
+  
+  if (!userWithThisCode) {
+    res.render("404", {
+      error: "don't have this invite"
+    })
+
+    return
+  }
+
+  let findedUser;
+
+  for (const user of dbParsed.users) {
+    const valid = await bcrypt.compare(req.cookies.token, user.token)
+
+    if (valid) {
+      findedUser = user
+    }
+  
+  }
+
+  if (!findedUser) {console.log("don't have user for this token"); return}
+
+
+  // далее просто в сайдбаре сделай чтобы среди каналов появлялись лс, дальше останется подвязать сюда сокетную логику
+
+  const userInDb = dbParsed.users.find((u) => u.id == findedUser.id)
+
+  if (!userInDb.pms) {
+    userInDb.pms = []
+  }
+
+  userInDb.pms.push(userWithThisCode.id)
+
+  if (!dbParsed.pms) {
+    dbParsed.pms = []
+  }
+
+  const newPM = {
+    users: [userWithThisCode.id, findedUser.id]
+  }
+
+  dbParsed.pms.push(newPM)
+  
+  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
+  res.redirect("/chat")
+
+ })
 
 app.use((req, res, next) => {
 
@@ -222,15 +285,15 @@ io.on("connection", (socket) => {
 
 
   socket.on("send_message", async (message, roomId) => {
-    console.log(`
-    GETTING MESSAGE
+    // console.log(`
+    // GETTING MESSAGE
 
-    media: ${message.media},
-    text: ${message.text},
-    token: ${message.token}
-            `);
+    // media: ${message.media},
+    // text: ${message.text},
+    // token: ${message.token}
+    //         `);
 
-    console.log(message);
+    // console.log(message);
 
     const db = await fs.promises.readFile(dbPath, "utf-8");
 
@@ -274,8 +337,19 @@ io.on("connection", (socket) => {
       return
     }
 
+    
+
+    const mediaID = nanoid(25)
+    if (message.media) {
+      const media = Buffer.from(message.media)
+  
+  
+      await fs.promises.writeFile(path.join(__dirname, "uploads", `${mediaID}.jpg`), media)
+    }
+    
+
     const newMessage = {
-      media: message.media,
+      media: (message.media) ? `/static/${mediaID}.jpg` : undefined,
       text: message.text,
       userID: userID
     };

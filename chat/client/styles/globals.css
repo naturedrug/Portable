@@ -34,3 +34,15 @@ input {
     border: none;
     outline: none;
 }
+
+.alertBar {
+    position: fixed;
+    width: 100%;
+    height: 75px;
+    top: -75px;
+    background-color: black;
+    border: 1px solid rgb(40,40,40);
+    transition: all 0.2s;
+    z-index: 9999;
+    text-align: center;
+}

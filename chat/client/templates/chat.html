@@ -10,6 +10,9 @@
     <title>Chat</title>
 </head>
 <body>
+      <div class="alertBar">
+    <p></p>
+  </div>
     <div class="container">
         <div class="header">
             <input type="text" class="search" name="search" autocomplete="off">
@@ -27,7 +30,10 @@
         </div>
         <div class="sending">
             <input class="messageInput" autocomplete="off"></input>
-            <button>SEND</button>
+            <label class="imageInputLabel">
+                <input type="file" name="image" id="sendImage" class="imageInput">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M11.293 3.293a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1-1.414 1.414L13 6.414V16a1 1 0 1 1-2 0V6.414L8.707 8.707a1 1 0 0 1-1.414-1.414l4-4Z" fill="#ffffff"></path><path d="M6 17a1 1 0 1 0-2 0v.6C4 19.482 5.518 21 7.4 21h9.2c1.882 0 3.4-1.518 3.4-3.4V17a1 1 0 1 0-2 0v.6c0 .778-.622 1.4-1.4 1.4H7.4c-.778 0-1.4-.622-1.4-1.4V17Z" fill="#ffffff"></path></g></svg>
+            </label>
         </div>
 
         <div class="createNewChannel">

@@ -589,4 +589,38 @@ router.get("/users", async (req, res) => {
   }
 });
 
+router.post("/create-invite", async (req, res) => {
+  const bodyToken = req.body.token
+  const bodyUsername = req.body.username
+
+  const db = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(db)
+
+  const user = dbParsed.users.find((u) => u.username === bodyUsername)
+
+  if (!user) {
+    res.writeHead(500, { "content-type": "application/json" })
+    console.error("don't have user")
+    res.end()
+  }
+
+  const isTokenValid = await bcrypt.compare(bodyToken, user.token)
+
+  if (!isTokenValid) {
+    res.writeHead(500, { "content-type": "application/json" })
+    console.log("invalid token");
+    res.end()
+  }
+  // all checks passed, logic below
+
+  user.invite = nanoid(30)
+
+  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
+
+  res.writeHead(200, {"content-type": "application/json"})
+  
+  res.end(String(user.invite))
+
+})
+
 export default router;

@@ -1,6 +1,7 @@
 import serverConfig from "./serverConfig.js";
 
 import socket from "./socket.js";
+import Alert from "./alert.js";
 
 function getCookie(name) {
   let matches = document.cookie.match(new RegExp(
@@ -11,31 +12,29 @@ function getCookie(name) {
 
 const account = JSON.parse(localStorage.getItem("account"));
 
+const alertBar = new Alert()
+
+alertBar.question("hello", 2000)
+
+
 window.onload = async () => {
-
-
   if (!localStorage.getItem("account")) {
     window.location.href = "/auth";
   }
 };
 
-let isReallyUser = await fetch(
-  `http://${serverConfig.hostname}:${serverConfig.port}/api/auth-token`,
-  {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      username: account.username,
-      token: account.token,
-    }),
-  }
-);
+let user = await fetch("/api/acc-info", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    username: account.username,
+    token: account.token
+  })
+})
 
-isReallyUser = await isReallyUser.json();
+user = await user.json()
 
-if (!isReallyUser.success) {
+if (!user) {
   window.location.href = "/auth";
 }
 
@@ -59,6 +58,7 @@ socket.on("server_send_message", (message) => {
 
 const button = document.querySelector("button");
 const input = document.querySelector(".messageInput");
+const mediaInput = document.querySelector(".imageInput")
 // const content = document.querySelector(".content");
 
 class DataSender {
@@ -67,26 +67,47 @@ class DataSender {
 
     input.value = "";
 
-    createMessage(
-      document.querySelector(`.chat-${getCookie("room")}`),
-      account.username,
-      `http://${serverConfig.hostname}:${serverConfig.port}/static/${encodeURI(account.username)}.jpg`,
-      undefined,
-      text,
-      true
-    );
+    const file = mediaInput.files[0]
 
-      socket.emit("send_message", {
-        media: mediaDataURL,
-        text: text,
-        token: account.token,
-      }, getCookie("room"));
+    if (file) {
+      const reader = new FileReader()
+  
+      reader.onload = (e) => {
+        createMessage(
+          document.querySelector(`.chat-${getCookie("room")}`),
+          account.username,
+          user.avatar,
+          e.target.result,
+          text,
+          true
+        );
+      }
+  
+      reader.readAsDataURL(file)
+    } else {
+              createMessage(
+          document.querySelector(`.chat-${getCookie("room")}`),
+          account.username,
+          user.avatar,
+          undefined,
+          text,
+          true
+        );
+    }
+
+
+
+    socket.emit("send_message", {
+      media: mediaDataURL || undefined,
+      text: text,
+      token: account.token,
+    }, getCookie("room"));
   }
 }
 
 class SocketListeners {
   static async getMessage(senderID, room, text, mediaDataURL) {
-    console.log(senderID)
+    console.log(mediaDataURL)
 
     let user = await fetch(
       `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
@@ -125,18 +146,19 @@ function createMessage(where, author, avatar, media, text, my) {
   const messageText = document.createElement("p");
   messageText.textContent = text;
 
-  if (media) {
-    const messageMedia = document.createElement("img");
-    messageMedia.classList.add("messageMedia");
-    messageMedia.src = media;
-    message.appendChild(messageMedia);
-  }
 
   const userAvatar = document.createElement("img");
   userAvatar.classList.add("avatar");
   userAvatar.src = avatar;
 
   message.appendChild(userAvatar);
+
+  if (media) {
+    const messageMedia = document.createElement("img");
+    messageMedia.classList.add("messageMedia");
+    messageMedia.src = media;
+    message.appendChild(messageMedia);
+  }
 
   const container = document.createElement("div")
 
@@ -148,21 +170,48 @@ function createMessage(where, author, avatar, media, text, my) {
   container.appendChild(messageText);
 }
 
-input.addEventListener("keydown", (e) => {
+input.addEventListener("keydown", async (e) => {
   if (e.key == "Enter") {
-    DataSender.sendMessage(input.value, undefined);
+    const file = mediaInput.files[0]
+
+    if (file) {
+      const arrayBuffer = await file.arrayBuffer();
+  
+      const uint8Array = new Uint8Array(arrayBuffer);
+  
+      DataSender.sendMessage(input.value, uint8Array);
+    } else {
+      DataSender.sendMessage(input.value, undefined)
+    }
+
   }
 });
+
+
+input.addEventListener("click", async () => {
+
+  let response = await fetch("/api/create-invite", {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({
+      token: account.token,
+      username: account.username,
+    })
+  })
+
+  response = await response.json()
+
+  console.log("click: ",response)
+})
 
 button.addEventListener("click", () => {
   isConnected
     ? undefined
     : () => {
-        return;
-      };
+      return;
+    };
 
-      if (isInputFocused) {
-        DataSender.sendMessage(input.value, undefined);
-      }
+
+  DataSender.sendMessage(input.value, undefined);
 
 });
