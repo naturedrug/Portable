@@ -611,16 +611,76 @@ router.post("/create-invite", async (req, res) => {
     console.log("invalid token");
     res.end()
   }
-  // all checks passed, logic below
 
-  user.invite = nanoid(30)
+  user.invite = nanoid(10)
 
   await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
 
-  res.writeHead(200, {"content-type": "application/json"})
-  
+  res.writeHead(200, { "content-type": "application/json" })
+
   res.end(String(user.invite))
 
+})
+
+router.post("/pm-info", async (req, res) => {
+  /* req.body requires:
+  token,
+  PM
+  */
+
+
+  if (!req.body.token || !req.body.PM) {
+    console.log("pm-info: don't have req-d data")
+    res.writeHead(500, { "content-type": "text/html; charset=utf-8" })
+    res.end("don't have req-d data")
+    return
+  }
+
+
+  const db = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(db)
+
+  let userByToken;
+
+  for (const user of dbParsed.users) {
+    const match = await bcrypt.compare(req.body.token, user.token)
+
+    if (match) {
+      userByToken = user
+      break
+    }
+  }
+
+  if (!userByToken) {
+    console.log("pm-info: don't have user for this token")
+    res.writeHead(500, { "content-type": "text/html; charset=utf-8" })
+    res.end("don't have user for this token")
+    return
+  }
+
+  const PM = dbParsed.pms.find((pm) => pm.id == req.body.PM)
+
+  if (!PM) {
+    console.log("pm-info: don't have this PM")
+    res.writeHead(500, { "content-type": "text/html; charset=utf-8" })
+    res.end("don't have this PM")
+    return
+  }
+
+  const isUserInPM = (PM.members.includes(userByToken.id)) ? true : false
+
+  if (!isUserInPM) {
+    console.log("pm-info: don't have this user in PM")
+    res.writeHead(500, { "content-type": "text/html; charset=utf-8" })
+    res.end("don't have this user in PM")
+    return
+  }
+
+  // logic below
+
+  res.writeHead(200, { "content-type": "application/json" })
+
+  res.end(JSON.stringify(PM))
 })
 
 export default router;

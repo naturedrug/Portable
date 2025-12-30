@@ -39,6 +39,8 @@ class Utils {
 
         this.dbParsed.users = []
 
+        this.dbParsed.pms = []
+
 
         this.write(this.dbParsed)
     }
@@ -47,6 +49,8 @@ class Utils {
         await this.init()
 
         this.dbParsed.channels = []
+
+        this.dbParsed.pms = []
 
         this.write(this.dbParsed)
     }

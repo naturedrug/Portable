@@ -45,7 +45,7 @@ app.post("/api/acc-info", async (req, res) => {
   const dbParsed = JSON.parse(db);
 
   const bodyParsed = req.body
-  
+
   const user = dbParsed.users.find((u) => bodyParsed.username === u.username);
 
   const isTokenValid = await bcrypt.compare(bodyParsed.token, user.token);
@@ -70,14 +70,13 @@ app.post("/api/acc-info-by-id", async (req, res) => {
 
   // ONLY PUBLIC INFO
 
-  console.log(bodyParsed.id)
-
-  console.log("acc-info-by-id: " + user);
 
   if (user) {
+    console.log("acc-info-by-id is ok")
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ username: user.username, avatar: user.avatar })); // maybe avatar and other acc info
   } else {
+    console.log("acc-info-by-id is not ok")
     res.writeHead(500);
     res.end(undefined);
   }
@@ -102,7 +101,7 @@ app.get("/users/:slug", async (req, res) => {
 
 
     let isMine = false;
-    
+
 
     if (req.cookies?.token) {
       const isTokenValid = await bcrypt.compare(req.cookies.token, user.token);
@@ -138,11 +137,11 @@ app.get("/@:channel", async (req, res) => {
   let channelFromDB = dbParsed.channels.find((c) => c.name === channelslug)
 
 
-  console.log(channelFromDB)
+
 
   if (channelFromDB) {
     res.cookie("channelid", channelFromDB.channelID)
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.render("channel", {
       channel: channelFromDB,
     });
@@ -156,13 +155,13 @@ app.get("/@:channel", async (req, res) => {
 app.get("/invite=:inviteCode", async (req, res) => {
   const inviteCode = req.params.inviteCode
 
-  if (!req.cookies.token) {console.log("don't have token for inviting"); return}
+  if (!req.cookies.token) { console.log("don't have token for inviting"); return }
 
   const db = await fs.promises.readFile(dbPath, 'utf-8')
   const dbParsed = JSON.parse(db)
 
   const userWithThisCode = dbParsed.users.find((u) => u.invite == inviteCode)
-  
+
   if (!userWithThisCode) {
     res.render("404", {
       error: "don't have this invite"
@@ -179,13 +178,10 @@ app.get("/invite=:inviteCode", async (req, res) => {
     if (valid) {
       findedUser = user
     }
-  
+
   }
 
-  if (!findedUser) {console.log("don't have user for this token"); return}
-
-
-  // далее просто в сайдбаре сделай чтобы среди каналов появлялись лс, дальше останется подвязать сюда сокетную логику
+  if (!findedUser) { console.log("don't have user for this token"); return }
 
   const userInDb = dbParsed.users.find((u) => u.id == findedUser.id)
 
@@ -193,22 +189,26 @@ app.get("/invite=:inviteCode", async (req, res) => {
     userInDb.pms = []
   }
 
-  userInDb.pms.push(userWithThisCode.id)
+  const idForPM = nanoid(25)
+
+  userInDb.pms.push(idForPM)
+  userWithThisCode.pms.push(idForPM)
 
   if (!dbParsed.pms) {
     dbParsed.pms = []
   }
 
   const newPM = {
-    users: [userWithThisCode.id, findedUser.id]
+    id: idForPM,
+    members: [userWithThisCode.id, findedUser.id]
   }
 
   dbParsed.pms.push(newPM)
-  
+
   await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
   res.redirect("/chat")
 
- })
+})
 
 app.use((req, res, next) => {
 
@@ -318,35 +318,45 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (!sender.channels) {
-      console.log("sender has no channels")
-      return
-    }
-
     let isUserHaveThisChannel = false;
 
-    for (const channel of sender.channels) {
-      console.log(channel, roomId)
-      if (channel.channelID == roomId) {
-        isUserHaveThisChannel = true
+    if (sender.channels) {
+      for (const channel of sender.channels) {
+        if (channel.channelID == roomId) {
+          isUserHaveThisChannel = true
+        }
       }
     }
 
-    if (!isUserHaveThisChannel) {
-      console.log("user dont have this channel (server listener)")
+
+    let isUserHaveThisPM = false;
+
+    if (sender.pms) {
+      for (const PM of dbParsed.pms) {
+
+        if (PM.members.includes(sender.id)) {
+  
+          isUserHaveThisPM = true;
+        }
+      }
+    }
+
+
+    if (!isUserHaveThisChannel && !isUserHaveThisPM) {
+      console.log("user don't have this channel or PM (server listener)")
       return
     }
 
-    
+    // sending below
 
     const mediaID = nanoid(25)
     if (message.media) {
       const media = Buffer.from(message.media)
-  
-  
+
+
       await fs.promises.writeFile(path.join(__dirname, "uploads", `${mediaID}.jpg`), media)
     }
-    
+
 
     const newMessage = {
       media: (message.media) ? `/static/${mediaID}.jpg` : undefined,
@@ -356,22 +366,47 @@ io.on("connection", (socket) => {
 
     const channelFromDB = dbParsed.channels.find((c) => roomId === c.channelID)
 
-    if (!channelFromDB.messages) {
-      channelFromDB.messages = []
+    if (!channelFromDB) {
+      const PMFromDB = dbParsed.pms.find((pm) => pm.id === roomId)
+
+      if (!PMFromDB.messages) {
+        PMFromDB.messages = []
+      }
+
+
+      PMFromDB.messages.push(newMessage);
+
+      await fs.promises.writeFile(
+        dbPath,
+        JSON.stringify(dbParsed, null, 2),
+        "utf-8"
+      );
+
+      console.log(`TO ${roomId}`)
+
+      newMessage.room = roomId
+
+      socket.to(roomId).emit("server_send_message", newMessage);
+    } else {
+
+      if (!channelFromDB.messages) {
+        channelFromDB.messages = []
+      }
+
+      channelFromDB.messages.push(newMessage);
+
+      await fs.promises.writeFile(
+        dbPath,
+        JSON.stringify(dbParsed, null, 2),
+        "utf-8"
+      );
+
+      console.log(`TO ${roomId}`)
+
+      newMessage.room = roomId
+
+      socket.to(roomId).emit("server_send_message", newMessage);
     }
 
-    channelFromDB.messages.push(newMessage);
-
-    await fs.promises.writeFile(
-      dbPath,
-      JSON.stringify(dbParsed, null, 2),
-      "utf-8"
-    );
-
-    console.log(`TO ${roomId}`)
-
-    newMessage.room = roomId
-
-    socket.to(roomId).emit("server_send_message", newMessage);
   });
 });

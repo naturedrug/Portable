@@ -1,5 +1,6 @@
 import Channels from "./channels.js";
 import socket from "./socket.js";
+import user from "./chat.js";
 
 const messagesDiv = document.querySelector(".content");
 const sendingDiv = document.querySelector(".sending .messageInput")
@@ -50,7 +51,7 @@ class Sidebar {
     this.initResize();
   }
 
-  createChatBlock(title, avatar, roomId, lastMessage) {
+  createChatBlock(title, avatar, roomId, lastMessage, isPM) {
     const chatBlock = document.createElement("div");
     chatBlock.classList.add("channel");
 
@@ -68,6 +69,9 @@ class Sidebar {
     channelName.append(channelTitle, channelAvatar)
     chatBlock.append(channelName);
     this.sideBar.appendChild(chatBlock);
+
+    console.log(isPM)
+
     chatBlock.addEventListener("click", async () => {
       this.openPreload();
       socket.emit("change-room", JSON.parse(localStorage.getItem("account")).token, roomId);
@@ -79,49 +83,104 @@ class Sidebar {
         loadChat.classList.add(`chat-${roomId}`, "chat");
         messagesDiv.appendChild(loadChat);
 
-        let channelInfo = await fetch("/api/full-channel-info", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ channelID: roomId, token: JSON.parse(localStorage.getItem("account")).token }),
-        });
-        channelInfo = await channelInfo.json();
-        if (channelInfo.messages) {
-          channelInfo.messages.forEach(async message => {
-            let userInfo = await fetch("/api/acc-info-by-id", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ id: message.userID }),
-            });
-            userInfo = await userInfo.json();
+        if (!isPM) {
 
-            const msg = document.createElement("div");
-            msg.classList.add("message");
+          console.log("INFO BY CHANNEL")
 
-            const userContainer = document.createElement("div");
-            userContainer.classList.add("messageContainer");
-
-            const avatarImg = document.createElement("img");
-            avatarImg.src = userInfo.avatar;
-            avatarImg.classList.add("avatar");
-
-            const username = document.createElement("a");
-            username.href = `/users/${userInfo.username}`;
-            username.classList.add("username")
-            username.textContent = userInfo.username;
-
-            const text = document.createElement("p");
-            text.textContent = message.text;
-            userContainer.append(avatarImg, username, text);
-            msg.appendChild(userContainer);
-            if (message.media) {
-              const mediaImg = document.createElement("img");
-              mediaImg.src = message.media;
-              mediaImg.classList.add("messageMedia");
-              msg.appendChild(mediaImg);
-            }
-            loadChat.appendChild(msg);
+          let channelInfo = await fetch("/api/full-channel-info", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ channelID: roomId, token: JSON.parse(localStorage.getItem("account")).token }),
           });
+
+          channelInfo = await channelInfo.json();
+          if (channelInfo.messages) {
+            channelInfo.messages.forEach(async message => {
+              let userInfo = await fetch("/api/acc-info-by-id", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ id: message.userID }),
+              });
+              userInfo = await userInfo.json();
+
+              const msg = document.createElement("div");
+              msg.classList.add("message");
+
+              const userContainer = document.createElement("div");
+              userContainer.classList.add("messageContainer");
+
+              const avatarImg = document.createElement("img");
+              avatarImg.src = userInfo.avatar;
+              avatarImg.classList.add("avatar");
+
+              const username = document.createElement("a");
+              username.href = `/users/${userInfo.username}`;
+              username.classList.add("username")
+              username.textContent = userInfo.username;
+
+              const text = document.createElement("p");
+              text.textContent = message.text;
+              userContainer.append(avatarImg, username, text);
+              msg.appendChild(userContainer);
+              if (message.media) {
+                const mediaImg = document.createElement("img");
+                mediaImg.src = message.media;
+                mediaImg.classList.add("messageMedia");
+                msg.appendChild(mediaImg);
+              }
+              loadChat.appendChild(msg);
+            });
+          }
+        } else {
+          // IF IT"S PM
+
+          let PMInfo = await fetch("/api/pm-info", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ PM: roomId, token: JSON.parse(localStorage.getItem("account")).token }),
+          });
+
+          PMInfo = await PMInfo.json();
+          if (PMInfo.messages) {
+            PMInfo.messages.forEach(async message => {
+              let userInfo = await fetch("/api/acc-info-by-id", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ id: message.userID }),
+              });
+              userInfo = await userInfo.json();
+
+              const msg = document.createElement("div");
+              msg.classList.add("message");
+
+              const userContainer = document.createElement("div");
+              userContainer.classList.add("messageContainer");
+
+              const avatarImg = document.createElement("img");
+              avatarImg.src = userInfo.avatar;
+              avatarImg.classList.add("avatar");
+
+              const username = document.createElement("a");
+              username.href = `/users/${userInfo.username}`;
+              username.classList.add("username")
+              username.textContent = userInfo.username;
+
+              const text = document.createElement("p");
+              text.textContent = message.text;
+              userContainer.append(avatarImg, username, text);
+              msg.appendChild(userContainer);
+              if (message.media) {
+                const mediaImg = document.createElement("img");
+                mediaImg.src = message.media;
+                mediaImg.classList.add("messageMedia");
+                msg.appendChild(mediaImg);
+              }
+              loadChat.appendChild(msg);
+            });
+          }
+
         }
+
       }
       document.querySelectorAll(".content .chat").forEach(c => c.style.display = "none");
       document.querySelector(`.content .chat-${roomId}`).style.display = "flex";
@@ -141,21 +200,62 @@ class Sidebar {
 
     user = await user.json();
 
-    if (!user.channels) { document.querySelector(".preloader").style.display = "none"; return; }
-    for (const channel of user.channels) {
-      const channelInfo = await Channels.channelInfo(channel.channelID);
+    if (!user.channels && !user.pms) { document.querySelector(".preloader").style.display = "none"; return; }
 
-      let name = channelInfo.channelName;
+    if (user.channels) {
+      for (const channel of user.channels) {
+        const channelInfo = await Channels.channelInfo(channel.channelID);
 
-      if (name.length > 15) name = name.slice(0, 15) + " ...";
+        if (channelInfo.channelName) {
+          let name = channelInfo.channelName;
 
-      this.createChatBlock(name, channelInfo.avatar, channel.channelID);
+          if (name.length > 15) name = name.slice(0, 15) + " ...";
+
+          this.createChatBlock(name, channelInfo.avatar, channel.channelID, undefined, false);
+        }
+
+      }
     }
+
+
+
+    if (user.pms) {
+
+      for (const PM of user.pms) {
+
+        let response = await fetch("/api/pm-info", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            token: localStorageAccount.token,
+            PM: PM
+          })
+        })
+
+        response = await response.json()
+
+        const PMMembers = response.members
+
+        const secondMember = (user.id == PMMembers[0]) ? PMMembers[1] : PMMembers[0]
+
+
+
+        let secondMemberInfo = await fetch("/api/acc-info-by-id", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            id: secondMember
+          })
+        })
+
+        secondMemberInfo = await secondMemberInfo.json()
+
+        this.createChatBlock(secondMemberInfo.username, secondMemberInfo.avatar, PM, undefined, true)
+      }
+    }
+
     document.querySelector(".preloader").style.display = "none";
-  
-    for (const PM of user.pms) {
-      
-    }
+
   }
 
   openPreload() { document.querySelector(".contentPreloader").style.display = "flex"; }
@@ -178,7 +278,7 @@ class Sidebar {
     handle.addEventListener("mousedown", () => { isResizing = true; });
     document.addEventListener("mousemove", e => {
       if (!isResizing) return;
-      let w = e.clientX; if (w < 75) w = 75;  if (w > 400) w = 400;
+      let w = e.clientX; if (w < 75) w = 75; if (w > 400) w = 400;
 
       localStorage.setItem("sidebar_resize", w)
 

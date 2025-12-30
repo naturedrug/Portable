@@ -14,8 +14,6 @@ const account = JSON.parse(localStorage.getItem("account"));
 
 const alertBar = new Alert()
 
-alertBar.question("hello", 2000)
-
 
 window.onload = async () => {
   if (!localStorage.getItem("account")) {
@@ -107,7 +105,6 @@ class DataSender {
 
 class SocketListeners {
   static async getMessage(senderID, room, text, mediaDataURL) {
-    console.log(mediaDataURL)
 
     let user = await fetch(
       `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
@@ -180,29 +177,33 @@ input.addEventListener("keydown", async (e) => {
       const uint8Array = new Uint8Array(arrayBuffer);
   
       DataSender.sendMessage(input.value, uint8Array);
+
+      mediaInput.value = ""
     } else {
       DataSender.sendMessage(input.value, undefined)
+
+      mediaInput.value = ""
     }
 
   }
 });
 
 
-input.addEventListener("click", async () => {
+// input.addEventListener("click", async () => {
 
-  let response = await fetch("/api/create-invite", {
-    method: "POST",
-    headers: {"content-type": "application/json"},
-    body: JSON.stringify({
-      token: account.token,
-      username: account.username,
-    })
-  })
+//   let response = await fetch("/api/create-invite", {
+//     method: "POST",
+//     headers: {"content-type": "application/json"},
+//     body: JSON.stringify({
+//       token: account.token,
+//       username: account.username,
+//     })
+//   })
 
-  response = await response.json()
+//   response = await response.json()
 
-  console.log("click: ",response)
-})
+//   console.log("click: ",response)
+// })
 
 button.addEventListener("click", () => {
   isConnected
@@ -215,3 +216,7 @@ button.addEventListener("click", () => {
   DataSender.sendMessage(input.value, undefined);
 
 });
+
+
+
+export default user
