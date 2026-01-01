@@ -19,6 +19,18 @@ async function input() {
     });
 }
 
+async function deleteUploads() {
+        const uploads = await fs.promises.readdir(path.join("uploads"))
+
+        uploads.forEach(async (upload) => {
+            if (upload != "1") {
+                await fs.promises.unlink(path.join("uploads", upload))
+            }
+
+            // '1' file is for github dir's finding
+        })
+}
+
 class Utils {
 
     async init() {
@@ -34,12 +46,14 @@ class Utils {
 
     async clearAll() {
         await this.init()
-        
+
         this.dbParsed.channels = []
 
         this.dbParsed.users = []
 
         this.dbParsed.pms = []
+
+        deleteUploads()
 
 
         this.write(this.dbParsed)
@@ -71,11 +85,27 @@ class Utils {
             channel.messages = []
         }
 
+        for (const PM of this.dbParsed.pms) {
+            PM.messages = []
+        }
+
         this.write(this.dbParsed)
+    }
+
+    async clearPMS() {
+        await this.init()
+
+        this.dbParsed.pms = []
+
+        this.write(this.dbParsed)
+    }
+
+    async clearUploads() {
+        deleteUploads()
     }
 }
 
-const dbUtils = new Utils()
+const utils = new Utils()
 
 switch (process.argv[2]) {
 
@@ -83,16 +113,24 @@ switch (process.argv[2]) {
         const answer = await input()
 
         if (answer == "Y") {
-            if (process.argv[3] == "a") {
-                dbUtils.clearAll()
-            } else if (process.argv[3] == "c") {
-                dbUtils.clearChannels()
-            } else if (process.argv[3] == "u") {
-                dbUtils.clearUsers()
-            } else if (process.argv[3] == "m") {
-                dbUtils.clearMessages()
+
+            switch (process.argv[3]) {
+                case "a":
+                    utils.clearAll()
+                    break;
+                case "c":
+                    utils.clearChannels()
+                case "u":
+                    utils.clearUsers()
+                case "m":
+                    utils.clearMessages()
+                case "p":
+                    utils.clearPMS()
+                case "upl":
+                    utils.clearUploads()
+                default:
+                    break;
             }
-            break;
         }
 
 

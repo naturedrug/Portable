@@ -6,6 +6,8 @@ import bcrypt from "bcrypt";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import io from "../server.js";
+
 import multer from "multer";
 
 import iconv from "iconv-lite";
@@ -56,8 +58,14 @@ router.post("/auth", async (req, res) => {
 
       user.token = refreshedHashedToken;
 
-      res.cookie("token", refreshedToken);
-      res.cookie("username", data.username);
+      res.cookie("token", refreshedToken, {
+
+        maxAge: 3600 * 24 * 7
+      });
+      res.cookie("username", data.username, {
+
+        maxAge: 999999 * 999999
+      });
 
       await fs.promises.writeFile(
         dbPath,
@@ -109,9 +117,6 @@ router.post("/reg", async (req, res) => {
 
       const token = nanoid(21);
       const hashedToken = await bcrypt.hash(token, 12);
-
-      res.cookie("token", token);
-      res.cookie("username", data.username);
 
       const newUser = {
         username: data.username,
@@ -270,7 +275,10 @@ router.post(
     user.username = req.body.newUsername || "<blank>";
     user.password = req.body.newPassword || user.password;
     user.bio = req.body.newBio;
-    ``;
+
+    res.cookie("username", req.body.newUsername, {
+      maxAge: 99999 * 9999
+    })
 
     if (req.file) {
       user.avatar = `/static/${fixCyrillic(req.file.originalname)}`;
@@ -681,6 +689,80 @@ router.post("/pm-info", async (req, res) => {
   res.writeHead(200, { "content-type": "application/json" })
 
   res.end(JSON.stringify(PM))
+})
+
+router.post("/new-pm", async (req, res) => {
+
+  if (!req.cookies.token || !req.body.friendID) { console.log("don't have token or friendID (new-pm)"); return }
+
+  const db = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsed = JSON.parse(db)
+
+  let friend = dbParsed.users.find((u) => u.id === req.body.friendID)
+
+  if (!friend) {
+    console.log("don't have a requested user")
+    res.end("500")
+    return
+  }
+
+  let findedUser;
+
+  for (const user of dbParsed.users) {
+    const valid = await bcrypt.compare(req.cookies.token, user.token)
+
+    if (valid) {
+      findedUser = user
+    }
+
+  }
+
+  if (!findedUser) { console.log("don't have user for this token"); return }
+
+  const userInDb = dbParsed.users.find((u) => u.id == findedUser.id)
+
+
+
+  if (!userInDb.pms) {
+    userInDb.pms = []
+  }
+
+  if (!friend.pms) {
+    friend.pms = []
+  }
+
+  const existingPM = dbParsed.pms?.find(pm =>
+    pm.members.includes(friend.id) && pm.members.includes(findedUser.id)
+  );
+
+  if (existingPM) {
+    console.log("PM already exists:", existingPM.id);
+    return res.end("PM already exists")
+  }
+
+  const idForPM = nanoid(25)
+
+  userInDb.pms.push(idForPM)
+  friend.pms.push(idForPM)
+
+  if (!dbParsed.pms) {
+    dbParsed.pms = []
+  }
+
+  const newPM = {
+    id: idForPM,
+    members: [friend.id, findedUser.id]
+  }
+
+  dbParsed.pms.push(newPM)
+
+  await fs.promises.writeFile(dbPath, JSON.stringify(dbParsed, null, 2), 'utf-8')
+
+  res.writeHead(200, { "content-type": "application/json" })
+  res.end(JSON.stringify({
+    success: true,
+    PMID: idForPM
+  }))
 })
 
 export default router;

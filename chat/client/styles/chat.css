@@ -2,8 +2,11 @@ html,
 body {
   background-color: rgb(5, 5, 5);
   margin: 0;
-  min-width: 100vw;
-  min-height: 100vh;
+  min-width: 100%;
+  min-height: 100%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
   overflow-x: hidden;
   padding: 0px;
 }

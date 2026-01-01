@@ -2,13 +2,10 @@ import serverConfig from "./serverConfig.js";
 
 import socket from "./socket.js";
 import Alert from "./alert.js";
+import getCookie from "./cookies.js"
+import DOM from "./DOMUse.js";
 
-function getCookie(name) {
-  let matches = document.cookie.match(new RegExp(
-    "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
-  ));
-  return matches ? decodeURIComponent(matches[1]) : undefined;
-}
+const DOMObjC = new DOM()
 
 const account = JSON.parse(localStorage.getItem("account"));
 
@@ -36,6 +33,8 @@ if (!user) {
   window.location.href = "/auth";
 }
 
+
+
 let isConnected = false;
 
 socket.on("connect", () => {
@@ -53,6 +52,22 @@ socket.on("server_send_message", (message) => {
     message.media
   );
 });
+
+socket.on("new-pm-client", async (senderID, PMID) => {
+  console.log("new pm from " + senderID)
+
+  let response = await fetch("/api/acc-info-by-id", {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({
+      id: senderID
+    })
+  })
+
+  response = await response.json()
+
+  DOMObjC.createChatBlock(response.username, response.avatar, PMID, undefined, true)
+})
 
 const button = document.querySelector("button");
 const input = document.querySelector(".messageInput");
@@ -93,34 +108,39 @@ class DataSender {
         );
     }
 
-
-
     socket.emit("send_message", {
       media: mediaDataURL || undefined,
       text: text,
       token: account.token,
     }, getCookie("room"));
+
+    document.querySelector(`.chat-${getCookie("room")}`).scrollIntoView({block: 'end', behavior: 'smooth'})
   }
 }
 
 class SocketListeners {
   static async getMessage(senderID, room, text, mediaDataURL) {
 
-    let user = await fetch(
-      `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          id: senderID,
-        }),
-      }
-    );
-
-    user = await user.json();
-
+    
     if (document.querySelector(`.chat-${room}`)) {
+      let user = await fetch(
+        `http://${serverConfig.hostname}:${serverConfig.port}/api/acc-info-by-id`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            id: senderID,
+          }),
+        }
+      );
+  
+      user = await user.json();
+
       createMessage(document.querySelector(`.chat-${room}`), user.username, user.avatar, mediaDataURL, text, false);
+
+      if (document.querySelector(`.chat-${room}`).style.display == "flex") {
+        document.querySelector(`.chat-${room}`).scrollIntoView({block: 'end', behavior: 'smooth'})
+      }
     }
 
   }
@@ -216,7 +236,3 @@ button.addEventListener("click", () => {
   DataSender.sendMessage(input.value, undefined);
 
 });
-
-
-
-export default user

@@ -26,6 +26,7 @@
   "dependencies": {
     "axios": "^1.13.1",
     "bcrypt": "^6.0.0",
+    "cookie": "^1.1.1",
     "cookie-parser": "^1.4.7",
     "ejs": "^3.1.10",
     "electron-squirrel-startup": "^1.0.1",

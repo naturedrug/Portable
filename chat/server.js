@@ -5,6 +5,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 
 import cookieParser from "cookie-parser";
+import cookie from "cookie"
 
 import fs from "fs";
 import path from "path";
@@ -187,6 +188,7 @@ app.get("/invite=:inviteCode", async (req, res) => {
 
   if (!userInDb.pms) {
     userInDb.pms = []
+    userWithThisCode.pms = []
   }
 
   const idForPM = nanoid(25)
@@ -230,12 +232,47 @@ server.listen(serverConfig.port, serverConfig.hostname, () => {
   );
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
+  const databaseConn = await fs.promises.readFile(dbPath, 'utf-8')
+  const dbParsedConn = JSON.parse(databaseConn)
+
+  const parsedCookies = cookie.parse(socket.handshake.headers.cookie)
+
+  console.log(parsedCookies.token)
+
+  let findedUser;
+
+  if (!parsedCookies.token) {
+    return console.log("don't have a token")
+  } 
+
+  for (const user of dbParsedConn.users) {
+    const valid = await bcrypt.compare(parsedCookies.token, user.token)
+
+    if (valid) {
+      findedUser = user
+    } 
+  }
+
+  if (!findedUser) {
+    return console.log("WARN: DON'T FIND THIS USER!");
+    
+  }
+
+  socket.join(findedUser.id)
+
+  console.log("JOINED TO " + findedUser.id)
+
   console.log(`! client connected: ${socket.id} \n`);
 
   socket.on("disconnect", () => {
     console.log(`! client disconnected: ${socket.id} \n`);
   });
+
+  socket.on("new-pm", (senderID, userID, PMID) => {
+    
+    socket.to(userID).emit("new-pm-client", senderID, PMID)
+  })
 
   /* message object
     {
@@ -335,7 +372,7 @@ io.on("connection", (socket) => {
       for (const PM of dbParsed.pms) {
 
         if (PM.members.includes(sender.id)) {
-  
+
           isUserHaveThisPM = true;
         }
       }
@@ -410,3 +447,6 @@ io.on("connection", (socket) => {
 
   });
 });
+
+
+export default io

@@ -166,4 +166,7 @@ html, body {
     cursor: pointer;
     width: 64px;
     height: 64px;
+    background-color: white;
+    border-radius: 50%;
+    padding: 10px;
 }
